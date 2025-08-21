@@ -1,0 +1,31 @@
+using UnityEditor;
+using UnityEngine;
+
+public class LevelBatchBinaryExporterWindow : EditorWindow
+{
+    private int startLevel = 1;
+    private int endLevel = 25;
+    private string levelsFolder = "Assets/ProjectRoot/Levels";
+    private string outputFile = "Assets/ProjectRoot/Binaries/levels_1_25.bin";
+
+    [MenuItem("Tools/Level Batch Binary Exporter")]
+    public static void ShowWindow()
+    {
+        GetWindow<LevelBatchBinaryExporterWindow>("Level Batch Binary Exporter");
+    }
+
+    private void OnGUI()
+    {
+        GUILayout.Label("Level Batch Binary Exporter", EditorStyles.boldLabel);
+        levelsFolder = EditorGUILayout.TextField("Levels Folder", levelsFolder);
+        startLevel = EditorGUILayout.IntField("Start Level", startLevel);
+        endLevel = EditorGUILayout.IntField("End Level", endLevel);
+        outputFile = EditorGUILayout.TextField("Output File", outputFile);
+
+        if (GUILayout.Button("Export Levels To Binary"))
+        {
+            LevelBatchBinaryExporter.ExportLevelsToBinary(levelsFolder, startLevel, endLevel, outputFile);
+            AssetDatabase.Refresh();
+        }
+    }
+}
