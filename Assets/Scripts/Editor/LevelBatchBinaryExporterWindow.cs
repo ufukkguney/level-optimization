@@ -3,10 +3,10 @@ using UnityEngine;
 
 public class LevelBatchBinaryExporterWindow : EditorWindow
 {
-    private int startLevel = 1;
-    private int endLevel = 25;
-    private string levelsFolder = "Assets/ProjectRoot/Levels";
-    private string outputFile = "Assets/ProjectRoot/Binaries/levels_1_25.bin";
+    private int startLevel = Constants.StartLevel;
+    private int endLevel = Constants.EndLevel;
+    private string levelsFolder = Constants.LevelsFolder;
+    private string outputFile = Constants.OutputFile;
 
     [MenuItem("Tools/Level Batch Binary Exporter")]
     public static void ShowWindow()

@@ -26,21 +26,10 @@ public static class LevelBatchBinaryExporter
         using (var fs = new FileStream(outputFilePath, FileMode.Create, FileAccess.Write))
         using (var bw = new BinaryWriter(fs))
         {
-            bw.Write(levelDatas.Count);
+            bw.Write(levelDatas.Count); //değişken olabilir dosyaya yazmak daha sağlıklı
             foreach (var level in levelDatas)
             {
-                bw.Write(level.Level);
-                bw.Write(level.LevelId ?? "");
-                bw.Write(level.Difficulty ?? "");
-                bw.Write(level.GridSize);
-                // board
-                bw.Write(level.Board.Length);
-                foreach (var row in level.Board)
-                {
-                    bw.Write(row.Length);
-                    foreach (var cell in row)
-                        bw.Write(cell ?? "");
-                }
+                LevelDataBinaryWriter.WriteLevelData(bw, level);
             }
         }
         Debug.Log($"{levelDatas.Count} adet level {outputFilePath} dosyasına binary olarak export edildi.");

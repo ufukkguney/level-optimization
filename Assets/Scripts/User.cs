@@ -1,24 +1,24 @@
 using UnityEngine;
 
-public struct User
+public class User
 {
-    private const string LevelIdPrefKey = "User_LevelId";
-    public int LevelId { get; private set; }
+    public int LevelId => Mathf.Max(_levelId, 1);
+    private int _levelId;
 
     public void Init()
     {
-        LevelId = PlayerPrefs.GetInt(LevelIdPrefKey, 0);
+        _levelId = PlayerPrefs.GetInt(Constants.LevelIdPrefKey, Constants.DefaultLevelId);
     }
 
     public void SaveLevelId()
     {
-        PlayerPrefs.SetInt(LevelIdPrefKey, LevelId);
+        PlayerPrefs.SetInt(Constants.LevelIdPrefKey, _levelId);
         PlayerPrefs.Save();
     }
 
     public void IncreaseLevel()
     {
-        LevelId++;
+        _levelId++;
         SaveLevelId();
     }
 }

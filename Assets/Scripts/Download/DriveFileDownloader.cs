@@ -1,6 +1,5 @@
-using System.Collections;
 using System.IO;
-using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 using VContainer;
@@ -10,9 +9,7 @@ public class DriveFileDownloader : MonoBehaviour
     [Header("Drive File Links ScriptableObject")]
     [Inject] private DriveFileLinks driveFileLinks;
 
-    private const string SaveFolder = "DownloadedLevels";
-
-    public void DownloadFileByIndex(int index)
+    public async void DownloadFileByIndex(int index)
     {
         if (driveFileLinks == null || driveFileLinks.FileLinks == null)
         {
@@ -33,63 +30,53 @@ public class DriveFileDownloader : MonoBehaviour
             if (idx >= 0 && idx + 1 < parts.Length)
                 fileId = parts[idx + 1];
         }
+        string persistentFolderPath = Path.Combine(Application.persistentDataPath, Constants.SaveFolder);
+        if (!Directory.Exists(persistentFolderPath)) Directory.CreateDirectory(persistentFolderPath);
+        string filePath = Path.Combine(persistentFolderPath, fileId);
+        if (File.Exists(filePath))
+        {
+            Debug.Log($"Level dosyası zaten indirilmiş: {fileId}");
+            return;
+        }
         string url = $"https://drive.google.com/uc?export=download&id={fileId}";
-        StartCoroutine(DownloadAndSaveFile(url, fileId));
+
+        await DownloadAndSaveFileAsync(url, fileId);
     }
 
-    private IEnumerator DownloadAndSaveFile(string url, string fileId)
+    private async Task DownloadAndSaveFileAsync(string url, string fileId)
     {
-        string persistentFolderPath = Path.Combine(Application.persistentDataPath, SaveFolder);
-        if (!Directory.Exists(persistentFolderPath)) Directory.CreateDirectory(persistentFolderPath);
-
+        string persistentFolderPath = Path.Combine(Application.persistentDataPath, Constants.SaveFolder);
         using (UnityWebRequest uwr = UnityWebRequest.Get(url))
         {
-            yield return uwr.SendWebRequest();
+            var operation = uwr.SendWebRequest();
+            while (!operation.isDone)
+                await Task.Yield();
+
             if (uwr.result != UnityWebRequest.Result.Success)
             {
                 Debug.LogError($"Indirme hatası: {fileId} - {uwr.error}");
-                yield break;
+                return;
             }
-            // string fileName = GetFileNameFromHeaderOrDefault(uwr, fileId);
-            File.WriteAllBytes(Path.Combine(persistentFolderPath, fileId), uwr.downloadHandler.data);
-            Debug.Log($"Dosya indirildi ve kopyalandı: {fileId}");
 
-            
-#if UNITY_EDITOR
-            UnityEditor.AssetDatabase.Refresh();
-#endif
+            byte[] allData = uwr.downloadHandler.data;
+            await Task.Run(() =>
+            {
+                string tempBatchFilePath = Path.Combine(persistentFolderPath, $"batch_{fileId}.bin");
+                File.WriteAllBytes(tempBatchFilePath, allData);
+                var levels = LevelBatchBinaryImporter.ImportLevelsFromBinary(tempBatchFilePath);
+                Debug.Log($"{levels.Count} adet LevelData batch dosyasından parse edildi.");
+                for (int i = 0; i < levels.Count; i++)
+                {
+                    string levelFileName = $"{Constants.LevelDataPath}{levels[i].Level}{Constants.LevelDataFileExtension}";
+                    string levelFilePath = Path.Combine(persistentFolderPath, levelFileName);
+                    using (var fs = new FileStream(levelFilePath, FileMode.Create, FileAccess.Write))
+                    using (var bw = new BinaryWriter(fs))
+                    {
+                        LevelDataBinaryWriter.WriteLevelData(bw, levels[i]);
+                    }
+                    Debug.Log($"Level file path: {levelFilePath} exported. Level: {levels[i].Level}, LevelId: {levels[i].LevelId}, Difficulty: {levels[i].Difficulty}, GridSize: {levels[i].GridSize}, BoardRows: {levels[i].Board?.Length}");
+                }
+            });
         }
     }
-
-    // private string GetFileNameFromHeaderOrDefault(UnityWebRequest uwr, string fileId)
-    // {
-    //     var sb = new System.Text.StringBuilder();
-    //     sb.Append(fileId).Append(".json");
-    //     string fileName = sb.ToString();
-    //     string contentDisposition = uwr.GetResponseHeader("Content-Disposition");
-    //     if (!string.IsNullOrEmpty(contentDisposition))
-    //     {
-    //         var fileNameToken = "filename=";
-    //         int idx = contentDisposition.IndexOf(fileNameToken);
-    //         if (idx >= 0)
-    //         {
-    //             int startIdx = idx + fileNameToken.Length;
-    //             if (contentDisposition[startIdx] == '"') startIdx++;
-    //             int endIdx = contentDisposition.IndexOf('"', startIdx);
-    //             sb.Clear();
-    //             if (endIdx > startIdx)
-    //                 sb.Append(contentDisposition, startIdx, endIdx - startIdx);
-    //             else
-    //             {
-    //                 int semiIdx = contentDisposition.IndexOf(';', startIdx);
-    //                 if (semiIdx > startIdx)
-    //                     sb.Append(contentDisposition, startIdx, semiIdx - startIdx);
-    //                 else
-    //                     sb.Append(contentDisposition.Substring(startIdx));
-    //             }
-    //             fileName = sb.ToString();
-    //         }
-    //     }
-    //     return fileName;
-    // }
 }
