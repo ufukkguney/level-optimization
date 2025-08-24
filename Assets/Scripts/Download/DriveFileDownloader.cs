@@ -9,7 +9,7 @@ public class DriveFileDownloader
 {
     [Inject] private DriveFileLinks driveFileLinks;
 
-    public async void DownloadFileByIndex(int index)
+    public async void DownloadFileByIndex(int index, Action<byte[], string> processBatchFile)
     {
         if (!IsValidFileLinks()) return;
         if (!IsValidIndex(index)) return;
@@ -20,16 +20,16 @@ public class DriveFileDownloader
 
         if (File.Exists(filePath))
         {
-            Debug.Log($"Level dosyası zaten indirilmiş: {fileId}");
+            Debug.Log($"Level file already downloaded: {fileId}");
             return;
         }
 
         string url = BuildGoogleDriveDownloadUrl(fileId);
-        await DownloadAndSaveFileAsync(url, fileId, persistentFolderPath);
+        await DownloadAndSaveFileAsync(url, fileId, persistentFolderPath, processBatchFile);
     }
 
 
-    private async Task DownloadAndSaveFileAsync(string url, string fileId, string persistentFolderPath)
+    private async Task DownloadAndSaveFileAsync(string url, string fileId, string persistentFolderPath, Action<byte[], string> processBatchFile)
     {
         using (UnityWebRequest uwr = UnityWebRequest.Get(url))
         {
@@ -39,51 +39,13 @@ public class DriveFileDownloader
 
             if (uwr.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogError($"Indirme hatası: {fileId} - {uwr.error}");
+                Debug.LogError($"Download error: {fileId} - {uwr.error}");
                 return;
             }
 
             byte[] allData = uwr.downloadHandler.data;
-            //25 adet olan level batch leri için en performanslı yöntem ayrı thread'de process olduğundan bu yöntem tercih edildi
-            await Task.Run(() => ProcessBatchFile(allData, fileId, persistentFolderPath));
-        }
-    }
-
-    private void ProcessBatchFile(byte[] allData, string fileId, string persistentFolderPath)
-    {
-        string tempBatchFilePath = Path.Combine(persistentFolderPath, $"batch_{fileId}.bin");
-        //File.WriteAllBytes yerine buffer lı yazmak daha performanslı
-        int bufferSize = Constants.BufferSize;
-        using (var fs = new FileStream(tempBatchFilePath, FileMode.Create, FileAccess.Write))
-        {
-            int offset = 0;
-            while (offset < allData.Length)
-            {
-                int bytesToWrite = Math.Min(bufferSize, allData.Length - offset);
-                fs.Write(allData, offset, bytesToWrite);
-                offset += bytesToWrite;
-            }
-        }
-
-        var levels = LevelBatchBinaryImporter.ImportLevelsFromLevelBatch(tempBatchFilePath);
-        //bir corruption olursa dosyaya yazmıyor
-        Debug.Log($"{levels.Count} adet LevelData batch dosyasından parse edildi.");
-        foreach (var level in levels)
-        {
-            string levelFileName = $"{Constants.LevelDataPath}{level.Level}{Constants.LevelDataFileExtension}";
-            string levelFilePath = Path.Combine(persistentFolderPath, levelFileName);
-            using (var fs = new FileStream(levelFilePath, FileMode.Create, FileAccess.Write))
-            using (var bw = new BinaryWriter(fs))
-            {
-                LevelDataBinaryWriter.WriteLevelData(bw, level);
-            }
-            Debug.Log($"Level file path: {levelFilePath} exported. Level: {level.Level}, LevelId: {level.LevelId}, Difficulty: {level.Difficulty}, GridSize: {level.GridSize}, BoardRows: {level.Board?.Length}");
-        }
-        // Batch dosyası parse edildikten sonra siliniyor
-        if (File.Exists(tempBatchFilePath))
-        {
-            File.Delete(tempBatchFilePath);
-            Debug.Log($"Temp batch dosyası silindi: {tempBatchFilePath}");
+            // The largest incoming data parse operation using a thread
+            await Task.Run(() => processBatchFile(allData, persistentFolderPath));
         }
     }
     
@@ -91,7 +53,7 @@ public class DriveFileDownloader
     {
         if (driveFileLinks == null || driveFileLinks.FileLinks == null)
         {
-            Debug.LogError("DriveFileLinks asseti atanmadı.");
+            Debug.LogError("DriveFileLinks asset is not assigned.");
             return false;
         }
         return true;
@@ -101,7 +63,7 @@ public class DriveFileDownloader
     {
         if (index < 0 || index >= driveFileLinks.FileLinks.Count)
         {
-            Debug.LogError($"Geçersiz index: {index}");
+            Debug.LogError($"Invalid index: {index}");
             return false;
         }
         return true;

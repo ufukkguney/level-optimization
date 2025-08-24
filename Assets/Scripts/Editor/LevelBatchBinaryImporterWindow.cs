@@ -3,7 +3,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
 
-// Level batch ve tekil level dosyalarını binary olarak import ve deserialize eden EditorWindow
+// EditorWindow that imports and deserializes level batch files as binary
 public class LevelBatchBinaryImporterWindow : EditorWindow
 {
     private string batchFilePath = Constants.BinaryFile;
@@ -40,7 +40,7 @@ public class LevelBatchBinaryImporterWindow : EditorWindow
             else
             {
                 batchLevels = null;
-                Debug.LogWarning("Batch dosya yolu geçersiz veya dosya bulunamadı.");
+                Debug.LogWarning("Batch file path is invalid or file not found.");
             }
         }
 
@@ -70,7 +70,6 @@ public class LevelBatchBinaryImporterWindow : EditorWindow
 
         if (GUILayout.Button("Deserialize Single Level"))
         {
-            Debug.Log($"Deserializing single level from: {singleLevelFilePath}");
             if (!string.IsNullOrEmpty(singleLevelFilePath) && File.Exists(singleLevelFilePath))
             {
                 singleLevel = LevelBatchBinaryImporter.Deserialize(singleLevelFilePath);
@@ -78,7 +77,7 @@ public class LevelBatchBinaryImporterWindow : EditorWindow
             else
             {
                 singleLevel = default;
-                Debug.LogWarning("Single level dosya yolu geçersiz veya dosya bulunamadı.");
+                Debug.LogWarning("Single level file path is invalid or file not found.");
             }
         }
 

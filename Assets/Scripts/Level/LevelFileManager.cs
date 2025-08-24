@@ -1,56 +1,90 @@
-using UnityEngine;
 using VContainer;
 using System.IO;
 using System;
+using System.Collections.Generic;
 
 public class LevelFileManager : IDisposable
 {
-    private readonly User _user;
-    [Inject] private DriveFileDownloader _downloader;
-
-    [Inject]
-    public LevelFileManager(User user)
+    [Inject] private readonly User user;
+    [Inject] private readonly DriveFileDownloader downloader;
+    
+    public LevelFileManager()
     {
-        _user = user;
         EventManager.OnWinClicked += CheckAndDownloadLevelBatch;
         EventManager.OnWinClicked += DeletePreviousLevelFile;
-
+    }
+    public void Init()
+    {
+        CheckAndDownloadLevelBatch();
     }
     public void CheckAndDownloadLevelBatch()
     {
-        int levelId = _user.LevelId;
-        string persistentFolderPath = Path.Combine(Application.persistentDataPath, Constants.SaveFolder);
+        int levelId = user.LevelId;
         int checkLevel = levelId + Constants.LevelCheckOffset;
-        string checkFileName = $"{Constants.LevelDataPath}{checkLevel}{Constants.LevelDataFileExtension}";
-        string checkFilePath = Path.Combine(persistentFolderPath, checkFileName);
+        string checkFilePath = LevelFileHelper.GetLevelFilePath(checkLevel, user.LevelDataPath);
 
         if (!File.Exists(checkFilePath))
         {
             int batchIndex = checkLevel / Constants.LevelBatchSize;
-            _downloader.DownloadFileByIndex(batchIndex);
-            Debug.Log($"Batch {batchIndex} (Level {checkLevel}) indiriliyor...");
+            downloader.DownloadFileByIndex(batchIndex, ProcessBatchFile);
+        }
+    }
+    private void ProcessBatchFile(byte[] allData, string persistentFolderPath)
+    {
+        // reading directly from memory is the most performant method when processing level batch
+        List<LevelData> levels;
+        using (var ms = new MemoryStream(allData))
+        using (var br = new BinaryReader(ms))
+        {
+            levels = LevelBatchBinaryImporter.ImportLevelsFromStream(ms, br);
+        }
+        if (levels.Count == 0)
+        {
+            UnityEngine.Debug.LogWarning("Downloaded level batch is corrupted or empty.");
+            return;
         }
         else
         {
-            Debug.Log($"Level {checkLevel} dosyası zaten mevcut.");
+            foreach (var level in levels)
+            {
+                string levelFileName = $"{Constants.LevelDataPath}{level.Level}{Constants.LevelDataFileExtension}";
+                string levelFilePath = Path.Combine(persistentFolderPath, levelFileName);
+                using (var fs = new FileStream(levelFilePath, FileMode.Create, FileAccess.Write))
+                using (var bw = new BinaryWriter(fs))
+                {
+                    LevelFileHelper.WriteLevelData(bw, level);
+                }
+            }
+            DeleteAllPreviousLevelFiles();
         }
     }
+
     public void DeletePreviousLevelFile()
     {
-        int previousLevel = _user.LevelId - 1;
+        int previousLevel = user.LevelId - 1;
         if (previousLevel < 0) return;
 
-        string persistentFolderPath = Path.Combine(Application.persistentDataPath, Constants.SaveFolder);
-        string fileName = $"{Constants.LevelDataPath}{previousLevel}{Constants.LevelDataFileExtension}";
-        string filePath = Path.Combine(persistentFolderPath, fileName);
+        string filePath = LevelFileHelper.GetLevelFilePath(previousLevel, user.LevelDataPath);
 
         if (File.Exists(filePath))
         {
             File.Delete(filePath);
-            Debug.Log($"Level {previousLevel} dosyası silindi: {filePath}");
         }
     }
-    
+
+    private void DeleteAllPreviousLevelFiles()//this is for better memory management when edge cases occur
+    {
+        int currentLevel = user.LevelId;
+        for (int level = 0; level < currentLevel; level++)
+        {
+            string filePath = LevelFileHelper.GetLevelFilePath(level, user.LevelDataPath);
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
+    }
+
     public void Dispose()
     {
         EventManager.OnWinClicked -= CheckAndDownloadLevelBatch;

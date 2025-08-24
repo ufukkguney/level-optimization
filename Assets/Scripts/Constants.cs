@@ -25,6 +25,7 @@ public static class Constants
     public const string OutputFile = "Assets/ProjectRoot/LevelsBatch/levels_1_25.bin";
     public const string BinaryFile = "Assets/ProjectRoot/LevelsBatch/levels_1_25.bin";
     public const string SingleLevelFile = "test";
+    public const string ResourcesLevelFile = "level_";
     #endregion
 
     #region Level Data Format
@@ -41,8 +42,9 @@ public static class Constants
     public const int StartLevel = 1;
     public const int EndLevel = 25;
     #endregion
-    
-    public const int BufferSize = 4096;
 
+    #region File I/O
+    public const int BufferSize = 4096;
+    #endregion
 }
 

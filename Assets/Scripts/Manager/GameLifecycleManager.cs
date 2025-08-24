@@ -4,31 +4,26 @@ using VContainer.Unity;
 
 public class GameLifecycleManager : IStartable,IDisposable
 {
-    [Inject] private LevelFileManager _levelFileManager;
-    [Inject] private LevelManager _levelManager;
-    [Inject] private Gameplay _gameplay;
-    [Inject] private HomeScreen _homeScreen ;
+    [Inject] private LevelFileManager levelFileManager;
+    [Inject] private Gameplay gameplay;
+    [Inject] private HomeScreen homeScreen ;
 
     public void Start()
     {
-        _levelFileManager?.CheckAndDownloadLevelBatch();
-        _levelManager?.Init();
-        _homeScreen?.Init(_levelManager);
-        _gameplay?.Init();
+        levelFileManager?.Init();
+        homeScreen?.Init();
+        gameplay?.Init();
 
         EventManager.OnPlayClicked += HandleHomeScreenPlayClicked;
     }
     
     private void HandleHomeScreenPlayClicked()
     {
-        _gameplay.StartGameplay();
+        gameplay.StartGameplay();
     }
 
     public void Dispose()
     {
         EventManager.OnPlayClicked -= HandleHomeScreenPlayClicked;
     }
-
-    
-    
 }

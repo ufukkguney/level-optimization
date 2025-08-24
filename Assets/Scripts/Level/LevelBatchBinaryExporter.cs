@@ -1,17 +1,15 @@
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
-using UnityEngine;
 
-// LevelBatchBinaryExporter sınıfı, belirli bir seviye aralığındaki seviyeleri binary formatında dışa aktarmak için kullanılır.
-// Sadece editörde kullanılmak üzere tasarlanmıştır.
+// Used to export levels in a specific range to binary format.
+// Designed for editor use only.
 public static class LevelBatchBinaryExporter
 {
     public static void ExportLevelsToBinary(string levelsFolder, int startLevel, int endLevel, string outputFilePath)
     {
         var levelDatas = LoadLevelDatas(levelsFolder, startLevel, endLevel);
         WriteLevelsToBinary(levelDatas, outputFilePath);
-        Debug.Log($"{levelDatas.Count} adet level {outputFilePath} dosyasına binary olarak export edildi.");
     }
 
     private static List<LevelData> LoadLevelDatas(string levelsFolder, int startLevel, int endLevel)
@@ -44,10 +42,11 @@ public static class LevelBatchBinaryExporter
         using (var fs = new FileStream(outputFilePath, FileMode.Create, FileAccess.Write))
         using (var bw = new BinaryWriter(fs))
         {
-            bw.Write(levelDatas.Count); //değişken olabilir dosyaya yazmak daha sağlıklı
+            // Write the number of levels at the beginning of the binary file for correct and performant batch reading
+            bw.Write(levelDatas.Count);
             foreach (var level in levelDatas)
             {
-                LevelDataBinaryWriter.WriteLevelData(bw, level);
+                LevelFileHelper.WriteLevelData(bw, level);
             }
         }
     }

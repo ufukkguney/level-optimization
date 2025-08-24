@@ -6,27 +6,24 @@ using VContainer;
 public class HomeScreen : MonoBehaviour, IDisposable
 {
     [SerializeField] public Button playButton;
-    private LevelManager _levelManager;
+    [Inject] private LevelManager levelManager;
 
-    public void Init(LevelManager levelManager)
+    public void Init()
     {
-        _levelManager = levelManager;
-        Debug.Log($"Initializing HomeScreen with LevelData: {_levelManager.CurrentLevelData?.LevelId ?? "null"}");
         playButton?.onClick.AddListener(PlayButtonClicked);
-        SetPlayButtonColor(_levelManager.CurrentLevelData?.Difficulty);
+        SetPlayButtonColor(levelManager.CurrentLevelData?.Difficulty);
 
         EventManager.OnWinClicked += HandleWinClicked;
     }
 
     private void HandleWinClicked()
     {
-        SetPlayButtonColor(_levelManager.CurrentLevelData?.Difficulty);
+        SetPlayButtonColor(levelManager.CurrentLevelData?.Difficulty);
         playButton.gameObject.SetActive(true);
     }
 
     private void PlayButtonClicked()
     {
-        Debug.Log("Play button clicked");
         EventManager.InvokePlayClicked();
         playButton.gameObject.SetActive(false);
     }

@@ -1,21 +1,27 @@
+using System;
 using VContainer;
-using UnityEngine;
 
-public class Gameplay
+public class Gameplay : IDisposable
 {
-    [Inject] private LevelManager _levelManager;
+    [Inject] private LevelManager levelManager;
     [Inject] private GameplayUI gameplayUI;
 
-    public LevelData? CurrentLevelData => _levelManager.CurrentLevelData;
+    public LevelData? CurrentLevelData => levelManager.CurrentLevelData;
 
     public void Init()
     {
         gameplayUI?.Init();
+
+        EventManager.OnPlayClicked += StartGameplay;
     }
 
     public void StartGameplay()
     {
-        Debug.Log($"Gameplay başladı. LevelData: {CurrentLevelData?.LevelId ?? "null"}");
         gameplayUI?.UpdateLevelInfo(CurrentLevelData);
+    }
+
+    public void Dispose()
+    {
+        EventManager.OnPlayClicked -= StartGameplay;
     }
 }

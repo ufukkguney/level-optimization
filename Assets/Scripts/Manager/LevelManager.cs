@@ -1,16 +1,16 @@
-using VContainer;
 using UnityEngine;
 using System.IO;
 using System;
 
 public class LevelManager : IDisposable
 {
-	[Inject] private readonly User _user;
+	private readonly User user;
 	public LevelData? CurrentLevelData { get; private set; }
 
-	public void Init()
+	public LevelManager(User user)
 	{
-		_user.Init();
+		this.user = user;
+		user.Init();
 		LoadCurrentLevelData();
 
 		EventManager.OnWinClicked += OnLevelWin;
@@ -18,47 +18,42 @@ public class LevelManager : IDisposable
 
 	public void LoadCurrentLevelData()
 	{
-		int levelId = _user.LevelId;
-		Debug.Log($"Loading LevelData for LevelId: {levelId}");
+		int levelId = user.LevelId;
 		CurrentLevelData = TryLoadLevelData(levelId);
-		Debug.Log($"Final LevelData: {CurrentLevelData}");
-	}
-
-	private LevelData? TryLoadLevelData(int levelId)
-	{
-		var data = LoadLevelDataFromFile(GetLevelFilePath(levelId));
-		if (data != null)
-			return data;
-		data = LoadLevelDataFromResources(levelId);
-		if (data != null)
-			Debug.Log($"Loaded LevelData from Resources: {data}");
-		return data;
 	}
 
 	public void OnLevelWin()
 	{
-		_user.IncreaseLevel();
-
+		user.IncreaseLevel();
 		LoadCurrentLevelData();
 	}
-	private string GetLevelFilePath(int levelId)
+
+	private LevelData? TryLoadLevelData(int levelId)
 	{
-		string persistentFolderPath = Path.Combine(Application.persistentDataPath, Constants.SaveFolder);
-		string fileName = $"{Constants.LevelDataPath}{levelId}{Constants.LevelDataFileExtension}";
-		return Path.Combine(persistentFolderPath, fileName);
+        // the first level is intentionally loaded from resources
+		var data = LoadLevelDataFromFile(LevelFileHelper.GetLevelFilePath(levelId, user.LevelDataPath));
+		if (data != null)
+			return data;
+
+		data = LoadLevelDataFromResources(levelId);
+		if (data != null)
+			return data;
+
+		return data;
 	}
 
 	private LevelData? LoadLevelDataFromFile(string filePath)
 	{
 		if (!File.Exists(filePath))
 			return null;
-		Debug.Log($"Deserializing existing LevelData from {filePath}");
-		return LevelBatchBinaryImporter.Deserialize(filePath);
+
+			LevelData data = LevelBatchBinaryImporter.Deserialize(filePath);
+		return data;
 	}
 
 	private LevelData? LoadLevelDataFromResources(int levelId)
 	{
-		string resourceName = $"level_{levelId}";
+		string resourceName = $"{Constants.ResourcesLevelFile}{levelId}";
 		var textAsset = Resources.Load<TextAsset>(resourceName);
 		if (textAsset == null)
 			return null;

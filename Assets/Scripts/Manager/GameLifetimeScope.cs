@@ -5,8 +5,6 @@ using UnityEngine;
 public class GameLifetimeScope : LifetimeScope
 {
     [SerializeField] private DriveFileLinks driveFileLinks;
-    [SerializeField] private HomeScreen homeScreen;
-    [SerializeField] private GameplayUI gameplayUI;
 
     protected override void Configure(IContainerBuilder builder)
     {
@@ -18,9 +16,9 @@ public class GameLifetimeScope : LifetimeScope
         builder.Register<Gameplay>(Lifetime.Singleton);
         builder.Register<User>(Lifetime.Singleton);
 
-        builder.RegisterInstance(driveFileLinks);
-        builder.RegisterInstance(homeScreen);
-        builder.RegisterInstance(gameplayUI);
+        builder.RegisterComponentInHierarchy<HomeScreen>();
+        builder.RegisterComponentInHierarchy<GameplayUI>();
 
+        builder.RegisterInstance(driveFileLinks);
     }
 }

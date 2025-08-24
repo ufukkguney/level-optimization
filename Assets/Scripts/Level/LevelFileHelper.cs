@@ -1,6 +1,6 @@
 using System.IO;
 
-public static class LevelDataBinaryWriter
+public static class LevelFileHelper
 {
     public static void WriteLevelData(BinaryWriter bw, LevelData levelData)
     {
@@ -15,6 +15,12 @@ public static class LevelDataBinaryWriter
             foreach (var cell in row)
                 bw.Write(cell ?? "");
         }
+    }
+
+    public static string GetLevelFilePath(int level, string persistentFolderPath)
+    {
+        string fileName = $"{Constants.LevelDataPath}{level}{Constants.LevelDataFileExtension}";
+        return Path.Combine(persistentFolderPath, fileName);
     }
 }
 

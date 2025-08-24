@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,23 +7,16 @@ using UnityEngine.UI;
 public class GameplayUI : MonoBehaviour, IDisposable
 {
     [Header("UI Elements")]
-    [SerializeField] public Button winButton;
+    [SerializeField] private Button winButton;
     [SerializeField] private TextMeshProUGUI levelIDText;
     [SerializeField] private TextMeshProUGUI boardText;
     [SerializeField] private TextMeshProUGUI difficultyText;
-
 
     public void Init()
     {
         winButton?.onClick.AddListener(WinButtonClicked);
 
         EventManager.OnPlayClicked += HandlePlayClicked;
-    }
-
-    public void Dispose()
-    {
-        winButton?.onClick.RemoveListener(WinButtonClicked);
-        EventManager.OnPlayClicked -= HandlePlayClicked;
     }
 
     private void HandlePlayClicked()
@@ -32,7 +26,6 @@ public class GameplayUI : MonoBehaviour, IDisposable
 
     private void WinButtonClicked()
     {
-        Debug.Log("Win button clicked");
         EventManager.InvokeWinClicked();
         winButton.gameObject.SetActive(false);
 
@@ -46,7 +39,18 @@ public class GameplayUI : MonoBehaviour, IDisposable
         if (levelData == null) return;
         levelIDText.text = $"Level ID: {levelData?.LevelId}";
 
-        boardText.text = string.Join("\n", Array.ConvertAll(levelData?.Board, row => string.Join(",", row)));
+        var sb = new StringBuilder();
+        foreach (var row in levelData?.Board)
+        {
+            sb.AppendLine(string.Join(",", row));
+        }
+        boardText.text = sb.ToString();
+
         difficultyText.text = $"Difficulty: {levelData?.Difficulty}";
+    }
+    public void Dispose()
+    {
+        winButton?.onClick.RemoveListener(WinButtonClicked);
+        EventManager.OnPlayClicked -= HandlePlayClicked;
     }
 }

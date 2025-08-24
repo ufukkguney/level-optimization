@@ -4,6 +4,6 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "DriveFileLinks", menuName = "LevelOptimization/DriveFileLinks")]
 public class DriveFileLinks : ScriptableObject
 {
-    [Tooltip("Google Drive dosya ID veya linkleri")]
+    [Tooltip("Google Drive file IDs or links")]
     public List<string> FileLinks = new List<string>();
 }

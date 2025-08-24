@@ -1,96 +1,90 @@
 using System.Collections.Generic;
 using System.IO;
-using UnityEngine;
 
 public static class LevelBatchBinaryImporter
 {
-    #region Import
     public static List<LevelData> ImportLevelsFromLevelBatch(string binaryFilePath)
     {
+        // for editor parse test
         using (var fs = new FileStream(binaryFilePath, FileMode.Open, FileAccess.Read))
         using (var br = new BinaryReader(fs))
         {
-            return ReadBatchFile(fs, br, binaryFilePath);
+            return ReadLevelBatchFile(fs, br);
         }
     }
 
-    private static List<LevelData> ReadBatchFile(FileStream fs, BinaryReader br, string binaryFilePath)
+    public static List<LevelData> ImportLevelsFromStream(Stream stream, BinaryReader br)
     {
-        var levels = new List<LevelData>();
-        long fileLength = fs.Length;
-        int count = br.ReadInt32();
-
-        if (!IsValidLevelCount(count))
-        {
-            Debug.LogError($"Level batch dosyası bozuk: count={count}, dosya={binaryFilePath}");
-            return new List<LevelData>();
-        }
-
-        for (int i = 0; i < count; i++)
-        {
-            if (!TryReadLevelData(br, fs, fileLength, binaryFilePath, out LevelData data))
-                return new List<LevelData>();
-            levels.Add(data);
-        }
-
-        if (fs.Position != fileLength)
-        {
-            Debug.LogWarning($"Level batch dosyası beklenenden büyük: {fileLength - fs.Position} fazla byte, dosya={binaryFilePath}");
-            return new List<LevelData>();
-        }
-
-        Debug.Log($"{levels.Count} adet level import edildi. Dosya: {binaryFilePath}");
-        return levels;
+        return ReadLevelBatchFile(stream, br);
     }
-
-    private static bool TryReadLevelData(BinaryReader br, FileStream fs, long fileLength, string binaryFilePath, out LevelData data)
-    {
-        long before = fs.Position;
-        data = ReadLevelData(br);
-        long after = fs.Position;
-        if (after > fileLength || after <= before)
-        {
-            Debug.LogError($"Level batch dosyası bozuk: veri sonu hatası, dosya={binaryFilePath}");
-            data = default;
-            return false;
-        }
-        return true;
-    }
-
-    private static bool IsValidLevelCount(int count)
-    {
-        return count > 0 && count <= Constants.MaxLevelBatchCount;
-    }
-    #endregion
 
     public static LevelData Deserialize(string filePath)
     {
-        byte[] bytes = File.ReadAllBytes(filePath);
-        using (var ms = new MemoryStream(bytes))
-        using (var reader = new BinaryReader(ms))
+        // single level read operation, FileStream is more performant
+        using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        using (var reader = new BinaryReader(fs))
         {
             return ReadLevelData(reader);
         }
     }
 
+    private static List<LevelData> ReadLevelBatchFile(Stream stream, BinaryReader br)
+    {
+        // Do not cache if the downloaded file is corrupted
+        var levels = new List<LevelData>();
+        long fileLength = stream.Length;
+        int count = br.ReadInt32();
+
+        if (!IsValidLevelCount(count))
+        {
+            return new List<LevelData>();
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            long before = stream.Position;
+            LevelData data = ReadLevelData(br);
+            long after = stream.Position;
+            if (after > fileLength || after <= before)
+            {
+                return new List<LevelData>();
+            }
+            levels.Add(data);
+        }
+
+        if (stream.Position != fileLength)
+        {
+            return new List<LevelData>();
+        }
+
+        return levels;
+    }
+
     private static LevelData ReadLevelData(BinaryReader reader)
     {
-        LevelData data = new LevelData();
-        data.Level = reader.ReadInt32();
-        data.LevelId = reader.ReadString();
-        data.Difficulty = reader.ReadString();
-        data.GridSize = reader.ReadInt32();
+        LevelData data = new LevelData
+        {
+            Level = reader.ReadInt32(),
+            LevelId = reader.ReadString(),
+            Difficulty = reader.ReadString(),
+            GridSize = reader.ReadInt32()
+        };
         int rows = reader.ReadInt32();
         data.Board = new string[rows][];
         for (int i = 0; i < rows; i++)
         {
             int cols = reader.ReadInt32();
-            data.Board[i] = new string[cols];
+            var row = new string[cols]; // single-dimensional array has less memory allocation
             for (int j = 0; j < cols; j++)
             {
-                data.Board[i][j] = reader.ReadString();
+                row[j] = reader.ReadString();
             }
+            data.Board[i] = row;
         }
         return data;
+    }
+    private static bool IsValidLevelCount(int count)
+    {
+        return count > 0 && count <= Constants.MaxLevelBatchCount;
     }
 }
