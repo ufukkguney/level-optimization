@@ -18,7 +18,7 @@ public static class Constants
     public const int LevelCheckOffset = 10;
     public const int LevelBatchSize = 25;
     #endregion
-    
+
     #region Level File Paths
     public const string SaveFolder = "DownloadedLevels";
     public const string LevelsFolder = "Assets/ProjectRoot/Levels";
@@ -41,6 +41,8 @@ public static class Constants
     public const int StartLevel = 1;
     public const int EndLevel = 25;
     #endregion
+    
+    public const int BufferSize = 4096;
 
 }
 

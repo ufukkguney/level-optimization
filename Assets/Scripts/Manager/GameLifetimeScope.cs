@@ -10,13 +10,12 @@ public class GameLifetimeScope : LifetimeScope
 
     protected override void Configure(IContainerBuilder builder)
     {
-        builder.RegisterEntryPoint<GameInitializer>(Lifetime.Singleton);
+        builder.RegisterEntryPoint<GameLifecycleManager>(Lifetime.Singleton);
 
         builder.Register<LevelManager>(Lifetime.Singleton);
         builder.Register<DriveFileDownloader>(Lifetime.Singleton);
         builder.Register<LevelFileManager>(Lifetime.Singleton);
         builder.Register<Gameplay>(Lifetime.Singleton);
-
         builder.Register<User>(Lifetime.Singleton);
 
         builder.RegisterInstance(driveFileLinks);

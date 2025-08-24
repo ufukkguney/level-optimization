@@ -8,6 +8,7 @@ public class User
     public void Init()
     {
         _levelId = PlayerPrefs.GetInt(Constants.LevelIdPrefKey, Constants.DefaultLevelId);
+        _levelId = Mathf.Max(_levelId, 1);
     }
 
     public void SaveLevelId()
@@ -19,6 +20,8 @@ public class User
     public void IncreaseLevel()
     {
         _levelId++;
+        _levelId = Mathf.Max(_levelId, 1);
         SaveLevelId();
+        Debug.Log($"Level increased to {_levelId}");
     }
 }

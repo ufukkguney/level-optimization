@@ -18,12 +18,6 @@ public class HomeScreen : MonoBehaviour, IDisposable
         EventManager.OnWinClicked += HandleWinClicked;
     }
 
-    public void Dispose()
-    {
-        playButton?.onClick.RemoveListener(PlayButtonClicked);
-        EventManager.OnWinClicked -= HandleWinClicked;
-    }
-
     private void HandleWinClicked()
     {
         SetPlayButtonColor(_levelManager.CurrentLevelData?.Difficulty);
@@ -54,5 +48,12 @@ public class HomeScreen : MonoBehaviour, IDisposable
                 break;
         }
         playButton.image.color = color;
+    }
+    
+    public void Dispose()
+    {
+        playButton?.onClick.RemoveListener(PlayButtonClicked);
+        
+        EventManager.OnWinClicked -= HandleWinClicked;
     }
 }

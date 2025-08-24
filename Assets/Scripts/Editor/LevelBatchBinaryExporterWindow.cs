@@ -1,6 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
+// Level batch ve tekil level dosyalarını binary olarak export eden EditorWindow
 public class LevelBatchBinaryExporterWindow : EditorWindow
 {
     private int startLevel = Constants.StartLevel;

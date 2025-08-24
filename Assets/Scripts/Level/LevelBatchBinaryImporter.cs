@@ -5,44 +5,56 @@ using UnityEngine;
 public static class LevelBatchBinaryImporter
 {
     #region Import
-    public static List<LevelData> ImportLevelsFromBinary(string binaryFilePath)
+    public static List<LevelData> ImportLevelsFromLevelBatch(string binaryFilePath)
     {
-        var levels = new List<LevelData>();
-
         using (var fs = new FileStream(binaryFilePath, FileMode.Open, FileAccess.Read))
         using (var br = new BinaryReader(fs))
         {
-            long fileLength = fs.Length;
-            int count = br.ReadInt32();
+            return ReadBatchFile(fs, br, binaryFilePath);
+        }
+    }
 
-            if (!IsValidLevelCount(count))
-            {
-                Debug.LogError($"Level batch dosyası bozuk: count={count}, dosya={binaryFilePath}");
+    private static List<LevelData> ReadBatchFile(FileStream fs, BinaryReader br, string binaryFilePath)
+    {
+        var levels = new List<LevelData>();
+        long fileLength = fs.Length;
+        int count = br.ReadInt32();
+
+        if (!IsValidLevelCount(count))
+        {
+            Debug.LogError($"Level batch dosyası bozuk: count={count}, dosya={binaryFilePath}");
+            return new List<LevelData>();
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            if (!TryReadLevelData(br, fs, fileLength, binaryFilePath, out LevelData data))
                 return new List<LevelData>();
-            }
+            levels.Add(data);
+        }
 
-            for (int i = 0; i < count; i++)
-            {
-                long before = fs.Position;
-                LevelData data = ReadLevelData(br);
-                long after = fs.Position;
-                if (after > fileLength || after <= before)
-                {
-                    Debug.LogError($"Level batch dosyası bozuk: veri sonu hatası, dosya={binaryFilePath}");
-                    return new List<LevelData>();
-                }
-                levels.Add(data);
-            }
-
-            if (fs.Position != fileLength)
-            {
-                Debug.LogWarning($"Level batch dosyası beklenenden büyük: {fileLength - fs.Position} fazla byte, dosya={binaryFilePath}");
-                return new List<LevelData>();
-            }
+        if (fs.Position != fileLength)
+        {
+            Debug.LogWarning($"Level batch dosyası beklenenden büyük: {fileLength - fs.Position} fazla byte, dosya={binaryFilePath}");
+            return new List<LevelData>();
         }
 
         Debug.Log($"{levels.Count} adet level import edildi. Dosya: {binaryFilePath}");
         return levels;
+    }
+
+    private static bool TryReadLevelData(BinaryReader br, FileStream fs, long fileLength, string binaryFilePath, out LevelData data)
+    {
+        long before = fs.Position;
+        data = ReadLevelData(br);
+        long after = fs.Position;
+        if (after > fileLength || after <= before)
+        {
+            Debug.LogError($"Level batch dosyası bozuk: veri sonu hatası, dosya={binaryFilePath}");
+            data = default;
+            return false;
+        }
+        return true;
     }
 
     private static bool IsValidLevelCount(int count)
@@ -81,5 +93,4 @@ public static class LevelBatchBinaryImporter
         }
         return data;
     }
-    
 }

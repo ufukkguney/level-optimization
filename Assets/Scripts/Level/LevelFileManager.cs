@@ -13,12 +13,9 @@ public class LevelFileManager : IDisposable
     {
         _user = user;
         EventManager.OnWinClicked += CheckAndDownloadLevelBatch;
-    }
-    public void Dispose()
-    {
-        EventManager.OnWinClicked -= CheckAndDownloadLevelBatch;
-    }
+        EventManager.OnWinClicked += DeletePreviousLevelFile;
 
+    }
     public void CheckAndDownloadLevelBatch()
     {
         int levelId = _user.LevelId;
@@ -37,5 +34,26 @@ public class LevelFileManager : IDisposable
         {
             Debug.Log($"Level {checkLevel} dosyası zaten mevcut.");
         }
+    }
+    public void DeletePreviousLevelFile()
+    {
+        int previousLevel = _user.LevelId - 1;
+        if (previousLevel < 0) return;
+
+        string persistentFolderPath = Path.Combine(Application.persistentDataPath, Constants.SaveFolder);
+        string fileName = $"{Constants.LevelDataPath}{previousLevel}{Constants.LevelDataFileExtension}";
+        string filePath = Path.Combine(persistentFolderPath, fileName);
+
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
+            Debug.Log($"Level {previousLevel} dosyası silindi: {filePath}");
+        }
+    }
+    
+    public void Dispose()
+    {
+        EventManager.OnWinClicked -= CheckAndDownloadLevelBatch;
+        EventManager.OnWinClicked -= DeletePreviousLevelFile;
     }
 }

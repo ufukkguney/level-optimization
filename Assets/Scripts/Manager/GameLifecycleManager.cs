@@ -2,7 +2,7 @@ using System;
 using VContainer;
 using VContainer.Unity;
 
-public class GameInitializer : IStartable,IDisposable
+public class GameLifecycleManager : IStartable,IDisposable
 {
     [Inject] private LevelFileManager _levelFileManager;
     [Inject] private LevelManager _levelManager;
@@ -11,12 +11,17 @@ public class GameInitializer : IStartable,IDisposable
 
     public void Start()
     {
-        _levelFileManager.CheckAndDownloadLevelBatch();
-        _levelManager.Init();
+        _levelFileManager?.CheckAndDownloadLevelBatch();
+        _levelManager?.Init();
         _homeScreen?.Init(_levelManager);
-        _gameplay.Init();
+        _gameplay?.Init();
 
         EventManager.OnPlayClicked += HandleHomeScreenPlayClicked;
+    }
+    
+    private void HandleHomeScreenPlayClicked()
+    {
+        _gameplay.StartGameplay();
     }
 
     public void Dispose()
@@ -24,9 +29,6 @@ public class GameInitializer : IStartable,IDisposable
         EventManager.OnPlayClicked -= HandleHomeScreenPlayClicked;
     }
 
-    private void HandleHomeScreenPlayClicked()
-    {
-        _gameplay.StartGameplay();
-    }
+    
     
 }

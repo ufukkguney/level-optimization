@@ -3,13 +3,15 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
 
+// Level batch ve tekil level dosyalarını binary olarak import ve deserialize eden EditorWindow
 public class LevelBatchBinaryImporterWindow : EditorWindow
 {
-    private string binaryFile = Constants.BinaryFile;
-    private string singleLevelFile = Constants.SingleLevelFile;
-    private Vector2 scrollPos;
-    private List<LevelData> importedLevels;
-    private LevelData deserializedLevel = default;
+    private string batchFilePath = Constants.BinaryFile;
+    private string singleLevelFilePath = Constants.SingleLevelFile;
+    private Vector2 batchScrollPos;
+    private Vector2 singleScrollPos;
+    private List<LevelData> batchLevels;
+    private LevelData singleLevel = default;
 
     [MenuItem("Tools/Level Batch Binary Importer")]
     public static void ShowWindow()
@@ -19,55 +21,74 @@ public class LevelBatchBinaryImporterWindow : EditorWindow
 
     private void OnGUI()
     {
-        GUILayout.Label("Level Batch Binary Importer", EditorStyles.boldLabel);
-        binaryFile = EditorGUILayout.TextField("Batch Binary File", binaryFile);
-
-        if (GUILayout.Button("Import Levels From Binary"))
-        {
-            importedLevels = LevelBatchBinaryImporter.ImportLevelsFromBinary(binaryFile);
-        }
-
+        DrawBatchImportSection();
         GUILayout.Space(10);
-        GUILayout.Label("Single Level Binary Deserialize", EditorStyles.boldLabel);
+        DrawSingleLevelSection();
+    }
 
-        singleLevelFile = EditorGUILayout.TextField("Single Level File", singleLevelFile);
+    private void DrawBatchImportSection()
+    {
+        GUILayout.Label("Batch Level Import", EditorStyles.boldLabel);
+        batchFilePath = EditorGUILayout.TextField("Batch Binary File", batchFilePath);
 
-        if (GUILayout.Button("Deserialize Single Level"))
+        if (GUILayout.Button("Import Levels From Batch File"))
         {
-            Debug.Log($"Deserializing single level from: {singleLevelFile}");
-            if (!string.IsNullOrEmpty(singleLevelFile) && File.Exists(singleLevelFile))
+            if (!string.IsNullOrEmpty(batchFilePath) && File.Exists(batchFilePath))
             {
-                deserializedLevel = LevelBatchBinaryImporter.Deserialize(singleLevelFile);
+                batchLevels = LevelBatchBinaryImporter.ImportLevelsFromLevelBatch(batchFilePath);
             }
             else
             {
-                deserializedLevel = default;
+                batchLevels = null;
+                Debug.LogWarning("Batch dosya yolu geçersiz veya dosya bulunamadı.");
             }
         }
 
-        if (importedLevels != null)
+        if (batchLevels != null)
         {
-            GUILayout.Label($"Imported Levels: {importedLevels.Count}");
-            scrollPos = EditorGUILayout.BeginScrollView(scrollPos, GUILayout.Height(200));
-            for (int i = 0; i < importedLevels.Count; i++)
+            GUILayout.Label($"Imported Levels: {batchLevels.Count}");
+            batchScrollPos = EditorGUILayout.BeginScrollView(batchScrollPos, GUILayout.Height(200));
+            foreach (var level in batchLevels)
             {
-                var level = importedLevels[i];
                 GUILayout.Label($"Level {level.Level} | Id: {level.LevelId} | Difficulty: {level.Difficulty} | GridSize: {level.GridSize}");
-                for (int r = 0; r < level.Board.Length; r++)
+                if (level.Board != null)
                 {
-                    GUILayout.Label(string.Join(",", level.Board[r]));
+                    for (int r = 0; r < level.Board.Length; r++)
+                    {
+                        GUILayout.Label(string.Join(",", level.Board[r]));
+                    }
                 }
             }
             EditorGUILayout.EndScrollView();
         }
+    }
 
-        if (deserializedLevel.Board != null)
+    private void DrawSingleLevelSection()
+    {
+        GUILayout.Label("Single Level Deserialize", EditorStyles.boldLabel);
+        singleLevelFilePath = EditorGUILayout.TextField("Single Level File", singleLevelFilePath);
+
+        if (GUILayout.Button("Deserialize Single Level"))
         {
-            GUILayout.Label($"Deserialized Level: {deserializedLevel.Level} | Id: {deserializedLevel.LevelId} | Difficulty: {deserializedLevel.Difficulty} | GridSize: {deserializedLevel.GridSize}");
-            scrollPos = EditorGUILayout.BeginScrollView(scrollPos, GUILayout.Height(200));
-            for (int r = 0; r < deserializedLevel.Board.Length; r++)
+            Debug.Log($"Deserializing single level from: {singleLevelFilePath}");
+            if (!string.IsNullOrEmpty(singleLevelFilePath) && File.Exists(singleLevelFilePath))
             {
-                GUILayout.Label(string.Join(",", deserializedLevel.Board[r]));
+                singleLevel = LevelBatchBinaryImporter.Deserialize(singleLevelFilePath);
+            }
+            else
+            {
+                singleLevel = default;
+                Debug.LogWarning("Single level dosya yolu geçersiz veya dosya bulunamadı.");
+            }
+        }
+
+        if (singleLevel.Board != null)
+        {
+            GUILayout.Label($"Deserialized Level: {singleLevel.Level} | Id: {singleLevel.LevelId} | Difficulty: {singleLevel.Difficulty} | GridSize: {singleLevel.GridSize}");
+            singleScrollPos = EditorGUILayout.BeginScrollView(singleScrollPos, GUILayout.Height(200));
+            for (int r = 0; r < singleLevel.Board.Length; r++)
+            {
+                GUILayout.Label(string.Join(",", singleLevel.Board[r]));
             }
             EditorGUILayout.EndScrollView();
         }
