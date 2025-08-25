@@ -2,6 +2,7 @@ using VContainer;
 using System.IO;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class LevelFileManager : IDisposable
 {
@@ -40,7 +41,7 @@ public class LevelFileManager : IDisposable
         }
         if (levels.Count == 0)
         {
-            UnityEngine.Debug.LogWarning("Downloaded level batch is corrupted or empty.");
+            Debug.LogWarning("Downloaded level batch is corrupted or empty.");
             return;
         }
         else
